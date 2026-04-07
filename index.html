@@ -1,0 +1,2941 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ИИ для Excel — Справочник для финансистов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07080f;
+  --bg2: #0c0e1a;
+  --surface: rgba(255,255,255,0.04);
+  --surface-hover: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border-bright: rgba(255,255,255,0.15);
+  --text: #f0f2ff;
+  --text-muted: rgba(240,242,255,0.5);
+  --text-dim: rgba(240,242,255,0.28);
+  --accent: #4f8eff;
+  --accent2: #7c5cff;
+  --accent3: #00d4aa;
+  --accent4: #ff6b6b;
+  --accent5: #ffb347;
+  --glass: rgba(255,255,255,0.03);
+  --glass-border: rgba(255,255,255,0.06);
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Onest', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ─── NOISE OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ─── AMBIENT GLOW ─── */
+.ambient {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.ambient-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(79,142,255,0.12), transparent 70%);
+  top: -200px; left: -100px;
+  animation: float1 20s ease-in-out infinite;
+}
+.ambient-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(124,92,255,0.1), transparent 70%);
+  top: 30%; right: -150px;
+  animation: float2 25s ease-in-out infinite;
+}
+.ambient-3 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(0,212,170,0.07), transparent 70%);
+  bottom: 10%; left: 20%;
+  animation: float3 30s ease-in-out infinite;
+}
+@keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(60px,40px)} }
+@keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,60px)} }
+@keyframes float3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-50px)} }
+
+/* ─── NAV ─── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 40px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(7,8,15,0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav-logo-icon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.nav-links a:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.nav-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(79,142,255,0.2), rgba(124,92,255,0.2));
+  border: 1px solid rgba(79,142,255,0.3);
+  border-radius: 20px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ─── LAYOUT ─── */
+main {
+  position: relative;
+  z-index: 1;
+  padding-top: 60px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ─── HERO ─── */
+.hero {
+  padding: 100px 0 80px;
+  text-align: center;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(79,142,255,0.1);
+  border: 1px solid rgba(79,142,255,0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  margin-bottom: 32px;
+}
+
+.hero-tag::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero h1 {
+  font-size: clamp(42px, 6vw, 78px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+}
+
+.hero h1 .line1 {
+  display: block;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero h1 .line2 {
+  display: block;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-desc {
+  font-size: 18px;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin: 0 auto 48px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+.hero-desc strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 56px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.hero-nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-nav a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  transition: all 0.25s;
+  backdrop-filter: blur(10px);
+}
+
+.hero-nav a:hover {
+  color: var(--text);
+  border-color: var(--border-bright);
+  background: var(--surface-hover);
+  transform: translateY(-1px);
+}
+
+.hero-nav a .icon { font-size: 15px; }
+
+/* ─── SECTION ─── */
+.section {
+  padding: 80px 0;
+  border-top: 1px solid var(--border);
+}
+
+.section-header {
+  margin-bottom: 48px;
+}
+
+.section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 14px;
+}
+
+.section-title span {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-desc {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 560px;
+  line-height: 1.7;
+}
+
+/* ─── TOOL GRID ─── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start; /* ← FIX: карточки не растягиваются по высоте соседей */
+}
+
+/* ─── TOOL CARD ─── */
+.tool-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* убираем transform: translateY чтобы не дёргало при раскрытии */
+  cursor: pointer;
+  position: relative;
+}
+
+.tool-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent 50%);
+  pointer-events: none;
+}
+
+.tool-card:hover {
+  border-color: rgba(255,255,255,0.14);
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.card-header {
+  padding: 22px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* строка: иконка + название + субтитл */
+.card-header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.card-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.card-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-subtitle {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* бейджи — всегда отдельная строка */
+.card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.badge-free { background: rgba(0,212,170,0.12); color: var(--accent3); border: 1px solid rgba(0,212,170,0.2); }
+.badge-paid { background: rgba(255,107,107,0.1); color: var(--accent4); border: 1px solid rgba(255,107,107,0.2); }
+.badge-freemium { background: rgba(255,179,71,0.1); color: var(--accent5); border: 1px solid rgba(255,179,71,0.2); }
+.badge-new { background: rgba(124,92,255,0.15); color: #a78bff; border: 1px solid rgba(124,92,255,0.25); }
+.badge-ru { background: rgba(79,142,255,0.1); color: var(--accent); border: 1px solid rgba(79,142,255,0.2); }
+
+.card-body {
+  padding: 0 24px 20px;
+}
+
+.card-desc {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.card-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.card-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.card-features li::before {
+  content: '→';
+  color: var(--accent);
+  flex-shrink: 0;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+/* ─── EXPANDABLE GUIDE ─── */
+.guide-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(79,142,255,0.05);
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Onest', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+/* ─── RESOURCE LINKS ─── */
+.guide-resources {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  background: rgba(79,142,255,0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-resources-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.resource-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: linear-gradient(135deg, rgba(79,142,255,0.12), rgba(124,92,255,0.08));
+  border: 1px solid rgba(79,142,255,0.25);
+  border-radius: 10px;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Onest', sans-serif;
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.resource-btn:hover {
+  background: linear-gradient(135deg, rgba(79,142,255,0.2), rgba(124,92,255,0.15));
+  border-color: rgba(79,142,255,0.4);
+  transform: translateY(-1px);
+}
+
+.resource-btn .btn-icon { font-size: 14px; }
+
+.resource-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.resource-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.resource-link:hover { color: var(--text-muted); }
+.resource-link::after { content: '↗'; font-size: 10px; }
+
+/* Компактная сетка кнопок — для карточек с несколькими равнозначными ресурсами */
+.resource-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.resource-btn-grid .resource-btn {
+  width: 100%;
+  justify-content: flex-start;
+  font-size: 11.5px;
+  padding: 8px 11px;
+  gap: 6px;
+}
+
+.guide-toggle:hover {
+  background: rgba(79,142,255,0.1);
+}
+
+.guide-toggle .arrow {
+  font-size: 10px;
+  transition: transform 0.3s;
+}
+
+.guide-toggle.open .arrow {
+  transform: rotate(180deg);
+}
+
+.guide-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(0,0,0,0.3);
+}
+
+.guide-content.open {
+  max-height: 1000px;
+}
+
+.guide-inner {
+  padding: 20px 24px 24px;
+}
+
+.guide-step {
+  margin-bottom: 16px;
+}
+
+.guide-step-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.guide-step p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ─── PROMPT BLOCK ─── */
+.prompt-block {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin: 12px 0;
+  position: relative;
+}
+
+.prompt-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.prompt-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: rgba(240,242,255,0.75);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Onest', sans-serif;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.copy-btn.copied { color: var(--accent3); border-color: rgba(0,212,170,0.3); }
+
+/* ─── WIDE CARD (for 1C section) ─── */
+.wide-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 32px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wide-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+.wide-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.flow-step {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.flow-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: -8px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+}
+
+.flow-step-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.flow-step-content {
+  padding-bottom: 24px;
+}
+
+.flow-step-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.flow-step-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ─── PROMPTS LIBRARY ─── */
+.prompts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.prompt-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.prompt-card:hover {
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+
+.prompt-card-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prompt-card-icon {
+  font-size: 18px;
+}
+
+.prompt-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.prompt-card-body {
+  padding: 16px 20px 20px;
+}
+
+.prompt-card-body .prompt-block {
+  margin: 0;
+}
+
+/* ─── COMPARE TABLE ─── */
+.compare-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  background: rgba(79,142,255,0.06);
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+thead th:first-child { border-radius: var(--radius) 0 0 0; }
+thead th:last-child { border-radius: 0 var(--radius) 0 0; }
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface); }
+
+tbody td {
+  padding: 14px 16px;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+tbody td:first-child {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.check { color: var(--accent3); font-size: 15px; }
+.cross { color: rgba(255,107,107,0.5); font-size: 15px; }
+.partial { color: var(--accent5); font-size: 15px; }
+
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.footer-note {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.footer-note strong { color: var(--text-muted); font-weight: 600; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ─── CARD OPENED STATE — серая подложка ─── */
+.tool-card.is-open {
+  background: rgba(255,255,255,0.055);
+  border-color: rgba(255,255,255,0.13);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+  .wide-card-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .prompts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  /* NAV */
+  nav {
+    padding: 0 16px;
+    height: 54px;
+  }
+  .nav-links { display: none; }
+  .nav-badge { font-size: 10px; padding: 3px 8px; }
+  .nav-logo { font-size: 14px; }
+  .nav-logo-icon { width: 24px; height: 24px; font-size: 12px; }
+
+  /* CONTAINER */
+  .container { padding: 0 16px; }
+
+  /* HERO */
+  .hero { padding: 48px 0 40px; }
+  .hero h1 { font-size: clamp(32px, 9vw, 48px); letter-spacing: -0.03em; }
+  .hero-desc { font-size: 15px; margin-bottom: 32px; }
+  .hero-tag { font-size: 11px; padding: 5px 12px; margin-bottom: 24px; }
+
+  .hero-stats {
+    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 280px;
+    margin: 0 auto 36px;
+    row-gap: 20px;
+  }
+  .stat-num { font-size: 28px; }
+  .stat-label { font-size: 11px; }
+
+  .hero-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .hero-nav a {
+    font-size: 12px;
+    padding: 10px 12px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* SECTIONS */
+  .section { padding: 52px 0; }
+  .section-header { margin-bottom: 32px; }
+  .section-title { font-size: clamp(22px, 6vw, 32px); }
+  .section-desc { font-size: 14px; }
+  .section-icon { width: 40px; height: 40px; font-size: 18px; margin-bottom: 12px; border-radius: 12px; }
+
+  /* TOOL CARDS */
+  .tool-grid { gap: 12px; }
+  .card-header { padding: 16px 16px 14px; gap: 10px; }
+  .card-header-top { gap: 10px; }
+  .card-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+  .card-name { font-size: 14px; white-space: normal; }
+  .card-subtitle { font-size: 11px; white-space: normal; }
+  .card-badges { gap: 4px; }
+  .badge { font-size: 9px; padding: 2px 6px; }
+  .card-body { padding: 0 16px 16px; }
+  .resource-btn-grid { grid-template-columns: 1fr; }
+  .card-desc { font-size: 13px; }
+  .card-features li { font-size: 12px; }
+
+  .guide-toggle { padding: 11px 16px; font-size: 11.5px; }
+  .guide-inner { padding: 16px 16px 20px; }
+  .guide-step-title { font-size: 11px; }
+  .guide-step p { font-size: 12px; }
+
+  .prompt-block { padding: 12px 14px; }
+  .prompt-label { font-size: 9px; }
+  .prompt-text { font-size: 11px; }
+  .copy-btn { font-size: 9px; padding: 3px 7px; }
+
+  /* WIDE CARD (1C section) */
+  .wide-card { padding: 20px 16px; }
+  .flow-step-title { font-size: 13px; }
+  .flow-step-desc { font-size: 12px; }
+  .flow-step-num { width: 28px; height: 28px; font-size: 11px; }
+
+  /* PROMPTS GRID */
+  .prompts-grid { gap: 12px; }
+  .prompt-card-header { padding: 14px 16px 12px; }
+  .prompt-card-title { font-size: 13px; }
+  .prompt-card-body { padding: 14px 16px 16px; }
+
+  /* HIGHLIGHT / WARNING */
+  .highlight-box { padding: 18px 18px; }
+  .highlight-box-title { font-size: 13px; }
+  .highlight-box p { font-size: 12.5px; }
+  .warning-box { padding: 12px 14px; }
+  .warning-box p { font-size: 12px; }
+
+  /* COMPARE TABLE */
+  .compare-wrap { border-radius: 14px; }
+  table { font-size: 11.5px; min-width: 600px; }
+  thead th { padding: 10px 10px; font-size: 9.5px; }
+  tbody td { padding: 10px 10px; }
+  tbody td:first-child { font-size: 12px; }
+  .check, .cross, .partial { font-size: 13px; }
+
+  /* BOTTOM RECO GRID */
+  .reco-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* FOOTER */
+  footer { padding: 28px 0; }
+  .footer-note { font-size: 12px; }
+}
+
+@media (max-width: 768px) {
+  #mobile-nav-btn { display: flex !important; }
+  #mobile-nav-menu { display: flex !important; }
+  #mobile-nav-menu:not(.open) { display: none !important; }
+  #mobile-nav-menu a:hover { background: var(--surface); color: var(--text); }
+}
+
+@media (max-width: 400px) {
+  .hero h1 { font-size: 28px; }
+  .hero-nav { grid-template-columns: 1fr; }
+  .hero-stats { grid-template-columns: 1fr 1fr; gap: 16px; }
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.6s ease-out forwards;
+}
+
+.section { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.section.visible { opacity: 1; transform: translateY(0); }
+
+/* ─── HIGHLIGHT ─── */
+.highlight-box {
+  background: linear-gradient(135deg, rgba(79,142,255,0.08), rgba(124,92,255,0.05));
+  border: 1px solid rgba(79,142,255,0.15);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), transparent);
+}
+
+.highlight-box-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.highlight-box p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* ─── WARNING BOX ─── */
+.warning-box {
+  background: rgba(255,179,71,0.06);
+  border: 1px solid rgba(255,179,71,0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.warning-box .icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+.warning-box p { font-size: 12.5px; color: rgba(255,179,71,0.85); line-height: 1.5; }
+
+/* ─── SECTION ICON ─── */
+.section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+</style>
+</head>
+<body>
+
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+<div class="ambient ambient-3"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">⚡</div>
+    ИИ для Excel
+  </a>
+  <ul class="nav-links">
+    <li><a href="#in-excel">В Excel</a></li>
+    <li><a href="#formulas">Формулы</a></li>
+    <li><a href="#bigdata">Большие данные</a></li>
+    <li><a href="#finance">Финмоделинг</a></li>
+    <li><a href="#one-c">1С → Excel</a></li>
+    <li><a href="#visual">Визуализация</a></li>
+    <li><a href="#prompts">Промпты</a></li>
+    <li><a href="#compare">Сравнение</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="nav-badge">2025–2026</div>
+    <button id="mobile-nav-btn" aria-label="Меню" style="display:none;background:var(--surface);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;align-items:center;justify-content:center;">☰</button>
+  </div>
+</nav>
+
+<!-- MOBILE NAV MENU -->
+<div id="mobile-nav-menu" style="display:none;position:fixed;top:54px;left:0;right:0;z-index:99;background:rgba(7,8,15,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 16px 20px;flex-direction:column;gap:4px;">
+  <a href="#in-excel" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">🤖 ИИ в Excel</a>
+  <a href="#formulas" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">📐 Формулы и VBA</a>
+  <a href="#bigdata" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">🗄️ Большие данные</a>
+  <a href="#finance" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">📊 Финмоделинг</a>
+  <a href="#one-c" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">🔗 1С → Excel</a>
+  <a href="#visual" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">✨ Визуализация</a>
+  <a href="#prompts" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">💬 Промпты</a>
+  <a href="#compare" style="display:block;padding:11px 14px;border-radius:10px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">⚖️ Сравнение</a>
+</div>
+
+<main>
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-tag fade-up">Справочник по Excel</div>
+    <h1 class="fade-up">
+      <span class="line1">Работа в Excel</span>
+      <span class="line2">с искусственным интеллектом</span>
+    </h1>
+    <p class="hero-desc fade-up">
+      Практический справочник инструментов, промптов и схем автоматизации для тех, кто работает с
+      <strong>таблицами, большими данными и 1С</strong>. Без воды — только то, что реально экономит время.
+    </p>
+    <div class="hero-stats fade-up">
+      <div class="stat"><div class="stat-num">20+</div><div class="stat-label">Инструментов</div></div>
+      <div class="stat"><div class="stat-num">40+</div><div class="stat-label">Готовых промптов</div></div>
+      <div class="stat"><div class="stat-num">6</div><div class="stat-label">Категорий</div></div>
+      <div class="stat"><div class="stat-num">4ч</div><div class="stat-label">Экономии в день</div></div>
+    </div>
+    <div class="hero-nav fade-up">
+      <a href="#in-excel"><span class="icon">🤖</span> ИИ в Excel</a>
+      <a href="#formulas"><span class="icon">📐</span> Формулы и VBA</a>
+      <a href="#bigdata"><span class="icon">🗄️</span> Большие данные</a>
+      <a href="#finance"><span class="icon">📊</span> Финмоделинг</a>
+      <a href="#one-c"><span class="icon">🔗</span> 1С → Excel</a>
+      <a href="#visual"><span class="icon">✨</span> Визуализация</a>
+      <a href="#prompts"><span class="icon">💬</span> Промпты</a>
+      <a href="#compare"><span class="icon">⚖️</span> Сравнение</a>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 1: ИИ в Excel -->
+<section class="section" id="in-excel">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(79,142,255,0.12);">🤖</div>
+      <div class="section-tag">Раздел 1</div>
+      <h2 class="section-title">ИИ <span>прямо в Excel</span></h2>
+      <p class="section-desc">Нативные интеграции, которые работают внутри привычного интерфейса. Никаких копипастов — ИИ видит вашу книгу целиком.</p>
+    </div>
+
+    <div class="highlight-box">
+      <div class="highlight-box-title">⚡ Что изменилось в 2025–2026</div>
+      <p>ИИ больше не просто «генерирует формулы». Claude for Excel, ChatGPT for Excel и Copilot понимают архитектуру всей книги, отслеживают связи между листами и работают с финансовыми источниками данных (LSEG, Moody's, S&P Capital IQ). Разница с 2023-м — как между калькулятором и старшим аналитиком.</p>
+    </div>
+
+    <div class="tool-grid">
+
+      <!-- Claude for Excel -->
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(124,92,255,0.3), rgba(79,142,255,0.2));">🔮</div>
+            <div class="card-meta">
+            <div class="card-name">Claude for Excel</div>
+            <div class="card-subtitle">Anthropic · Native Add-in</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Pro $20/мес</span>
+            <span class="badge badge-new">Лучший выбор</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Нативный сайдбар с полным пониманием структуры книги. Читает все листы, прослеживает зависимости ячеек, объясняет каждое изменение. Подключён к финансовым источникам LSEG, Moody's и S&P Capital IQ.</p>
+          <ul class="card-features">
+            <li>Понимает архитектуру всей книги — не одного листа</li>
+            <li>Отслеживает что и где изменил, показывает диффы</li>
+            <li>Связка с финансовыми данными прямо в ячейках</li>
+            <li>Вариант анализа план-факт по 3+ файлам через Cowork</li>
+            <li>Защита от prompt-injection из ячеек (важно!)</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Открыть пошаговый гайд <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Установка Add-in (Windows 11)</div>
+              <p>Откройте Excel → вкладка <strong style="color:var(--text)">Главная (Home)</strong> на ленте → кнопка <strong style="color:var(--text)">Add-ins</strong> → в строке поиска наберите <strong style="color:var(--text)">«Claude»</strong> → выберите <strong style="color:var(--text)">«Claude by Anthropic for Excel»</strong> → нажмите <strong style="color:var(--text)">Add</strong>. Альтернативно: перейдите в Microsoft AppSource по кнопке ниже → «Get it now» → Excel откроется автоматически с уже активным Add-in.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Вход и активация</div>
+              <p>После установки в правой части экрана появится боковая панель Claude. Нажмите <strong style="color:var(--text)">Sign in</strong> → войдите через аккаунт Anthropic (claude.ai). Требуется подписка <strong style="color:var(--text)">Pro ($20/мес)</strong> или выше. Быстрый вызов панели в любой момент: <strong style="color:var(--text)">Ctrl + Alt + C</strong>.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Правильный подход к работе</div>
+              <p>Не используйте как поисковик по формулам. Опишите задачу целиком: «У меня бюджет на листах Q1–Q4, нужно план-факт за год с отклонениями в % и выделением красным > 15%». Claude видит всю книгу — ссылайтесь на конкретные листы и ячейки.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 4 — Готовый промпт для старта</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Первый промпт в новой книге</div>
+                <div class="prompt-text">Ты видишь книгу Excel. Лист «Факт» — данные выгрузки из 1С. Лист «Бюджет» — плановые показатели. Создай на новом листе «Анализ» сводную таблицу план-факт по статьям ДДС с колонками: план, факт, абс. откл., % откл. Ячейки с отклонением >15% выдели красным, <5% — зелёным. Все формулы должны быть ссылками, без hardcode.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">⚠️ Важно: безопасность</div>
+              <p>Никогда не открывайте через Claude файлы, полученные от внешних контрагентов без проверки. В ячейках могут быть скрытые инструкции (prompt injection — уязвимость CellShock). Anthropic добавила защиту, но правило остаётся: только доверенные файлы.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://marketplace.microsoft.com/en-us/product/saas/wa200009404" target="_blank">
+              <span class="btn-icon">🛒</span> Установить в Microsoft AppSource
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://claude.com/claude-in-excel" target="_blank">Официальная страница</a>
+              <a class="resource-link" href="https://support.claude.com/en/articles/12650343-use-claude-for-excel" target="_blank">Документация</a>
+              <a class="resource-link" href="https://claude.com/pricing" target="_blank">Тарифы Claude</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ChatGPT for Excel -->
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(0,212,170,0.25), rgba(0,180,140,0.15));">🟢</div>
+            <div class="card-meta">
+            <div class="card-name">ChatGPT for Excel</div>
+            <div class="card-subtitle">OpenAI · GPT-5.4 · Март 2026</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-paid">Plus $20/мес</span>
+            <span class="badge badge-new">Новинка</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Запущен в марте 2026 года с интеграцией финансовых данных. Сильная сторона — генерация шаблонов и промпт-библиотек. Работает агентно: сам делает несколько шагов без промежуточных подтверждений.</p>
+          <ul class="card-features">
+            <li>GPT-5.4 — сильнее в генерации текстовых отчётов</li>
+            <li>Агентный режим: несколько действий за один запрос</li>
+            <li>Интеграция с финансовыми приложениями (Bloomberg и др.)</li>
+            <li>Лучше Claude для создания шаблонов и описаний</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Открыть пошаговый гайд <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Установка Add-in (Windows 11)</div>
+              <p>Перейдите на страницу в Microsoft AppSource (кнопка ниже) → нажмите <strong style="color:var(--text)">Get it now</strong> → войдите через Microsoft-аккаунт → Excel откроется с установленным Add-in. Или вручную: Excel → вкладка <strong style="color:var(--text)">Главная</strong> → <strong style="color:var(--text)">Add-ins</strong> → поиск <strong style="color:var(--text)">«ChatGPT»</strong> → выберите официальный от OpenAI → Add.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Вход в аккаунт</div>
+              <p>В боковой панели нажмите <strong style="color:var(--text)">Sign in with OpenAI</strong>. Требуется подписка <strong style="color:var(--text)">ChatGPT Plus или Pro</strong>. Сейчас доступно в бета-версии для пользователей из США, Канады, Австралии — для остальных стран используйте веб-версию ChatGPT с загрузкой файла.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Сильный кейс: текстовый отчёт</div>
+              <p>ChatGPT for Excel особенно силён в создании управленческих нарративов по данным таблицы. Идеально для еженедельных резюме и отчётов для руководства.</p>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для управленческого резюме</div>
+                <div class="prompt-text">На листе «Данные» — финансовые показатели компании за Q1 2025. Напиши управленческое резюме (300 слов) для CFO: ключевые тренды выручки, 3 проблемных направления, 2 позитивных момента, рекомендации. Стиль: профессиональный, без воды.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Claude vs ChatGPT — когда что выбрать</div>
+              <p><strong style="color:var(--text)">Claude</strong> — глубокое понимание структуры книги, аудит формул, план-факт по нескольким листам.<br><strong style="color:var(--text)">ChatGPT</strong> — текстовые выводы по данным, шаблоны, агентное выполнение цепочки задач.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://marketplace.microsoft.com/en-us/product/office/wa200010215" target="_blank">
+              <span class="btn-icon">🛒</span> Установить в Microsoft AppSource
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://openai.com/index/chatgpt-for-excel/" target="_blank">Официальный анонс OpenAI</a>
+              <a class="resource-link" href="https://chatgpt.com" target="_blank">ChatGPT Web</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Microsoft Copilot -->
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(0,120,212,0.3), rgba(0,80,180,0.2));">🪟</div>
+            <div class="card-meta">
+            <div class="card-name">Microsoft Copilot</div>
+            <div class="card-subtitle">Microsoft 365 · Встроено</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-paid">M365 от $30/мес</span>
+            <span class="badge badge-ru">Корпоратив</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Нативная интеграция в M365. Главное преимущество — безопасность корпоративного уровня и единый контекст между Excel, Word и Teams. Идеален там, где политика запрещает сторонние Add-ins.</p>
+          <ul class="card-features">
+            <li>Не нужна дополнительная установка — встроен в M365</li>
+            <li>Корпоративная безопасность, данные не покидают тенант</li>
+            <li>Сводные таблицы и чарты по голосовой команде</li>
+            <li>Слабее Claude по глубине понимания финмоделей</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Открыть пошаговый гайд <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Проверьте лицензию (Windows 11)</div>
+              <p>Откройте Excel → <strong style="color:var(--text)">Файл → Учётная запись → Сведения о продукте</strong>. Убедитесь что у вас <strong style="color:var(--text)">Microsoft 365</strong> (не Office 2019/2021). Copilot в Excel требует отдельную лицензию: <strong style="color:var(--text)">Copilot Pro ($20/мес)</strong> для частных лиц или <strong style="color:var(--text)">Microsoft 365 Copilot</strong> для бизнеса.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Активация</div>
+              <p>После покупки лицензии: Excel → <strong style="color:var(--text)">Файл → Учётная запись → Обновить лицензию</strong>. Перезапустите Excel. Кнопка Copilot появится на вкладке <strong style="color:var(--text)">Главная</strong> в правой части ленты. Быстрый вызов: <strong style="color:var(--text)">Alt + H → FX</strong> (через клавишные подсказки на ленте).</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Если Copilot не отображается</div>
+              <p>Excel → <strong style="color:var(--text)">Файл → Параметры → Центр управления безопасностью → Параметры конфиденциальности</strong> → включите <strong style="color:var(--text)">«Все подключённые функции»</strong>. Если управляется организацией — обратитесь к IT-администратору.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Лучший кейс — сводная за 30 секунд</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Запрос в Copilot</div>
+                <div class="prompt-text">Создай сводную таблицу по этим данным: сгруппируй по месяцам и контрагентам, посчитай сумму и среднее. Добавь срезы по подразделению и периоду. Форматируй числа как рубли без копеек.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://www.microsoft.com/ru-ru/microsoft-365/copilot/copilot-for-work" target="_blank">
+              <span class="btn-icon">🪟</span> Microsoft Copilot для бизнеса
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://support.microsoft.com/en-us/office/how-to-find-and-enable-missing-copilot-button-in-microsoft-365-apps-c8482b93-4b96-4bb8-8ec9-5148f4d42441" target="_blank">Устранение неполадок</a>
+              <a class="resource-link" href="https://support.microsoft.com/ru-ru/copilot" target="_blank">Справка Copilot</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemini -->
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(66,133,244,0.3), rgba(52,168,83,0.2));">🔷</div>
+            <div class="card-meta">
+              <div class="card-name">Google Gemini</div>
+              <div class="card-subtitle">Google · Sheets + чат с Excel</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Free tier · лимит/день</span>
+            <span class="badge badge-new">Gemini 3.1 Pro</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Нативно встроен в Google Sheets — кнопка «Ask Gemini» прямо в интерфейсе. Для Excel — загружаете файл в чат и работаете. Функция <code style="color:var(--accent3);font-family:'JetBrains Mono',monospace;font-size:11px">=AI()</code> прямо в ячейках Sheets. Бесплатный тариф даёт доступ к Gemini 3.0 / 3.1 Pro с дневным лимитом запросов — для большинства офисных задач хватает.</p>
+          <ul class="card-features">
+            <li>Нативный сайдбар в Google Sheets — бесплатно</li>
+            <li>Формулы, анализ, визуализация по описанию задачи</li>
+            <li>Fill with Gemini — автозаполнение таблиц из веба</li>
+            <li>Excel-файлы: загружаете в чат → получаете анализ</li>
+            <li>Экспорт результатов обратно в Sheets или Excel</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Как работать с Excel через Gemini <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Два способа работы (Windows 11)</div>
+              <p><strong style="color:var(--text)">Способ А — через Google Sheets (лучший):</strong> Откройте браузер → перейдите на <strong style="color:var(--text)">sheets.google.com</strong> → откройте или создайте таблицу → нажмите иконку <strong style="color:var(--text)">✨ Ask Gemini</strong> в правом верхнем углу → сайдбар открыт. Бесплатно для всех аккаунтов Google.<br><br><strong style="color:var(--text)">Способ Б — через чат с Excel-файлом:</strong> Перейдите на <strong style="color:var(--text)">gemini.google.com</strong> → нажмите скрепку → загрузите .xlsx файл → задавайте вопросы.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Функция =AI() в ячейках</div>
+              <p>В Google Sheets можно использовать <strong style="color:var(--text)">=AI(«запрос», A2)</strong> прямо в ячейке. Например: <code style="color:var(--accent3);font-family:'JetBrains Mono',monospace;font-size:11px">=AI("категоризируй этот расход: Аренда/Зарплата/ИТ/Прочее", A2)</code> — классифицирует весь столбец автоматически. Доступно в Google Workspace или Google AI Pro.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Промпт для анализа финансов</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт в Gemini Sheets / чате</div>
+                <div class="prompt-text">Это таблица с транзакциями за квартал (столбцы: Дата, Контрагент, Сумма, Категория). Сделай: 1) Сводку по категориям — сумма и % от общего; 2) Топ-5 контрагентов по объёму; 3) Помесячную динамику расходов; 4) Вырви аномальные суммы (больше 3σ). Результаты вставь в новый лист «Анализ».</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">⚠️ Важно: версия истории</div>
+              <p>Перед масштабными правками через Gemini: <strong style="color:var(--text)">Файл → История версий → Назвать текущую версию</strong>. Отмена действий Gemini иногда работает непредсказуемо — сохранённая версия гарантирует откат.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://gemini.google.com" target="_blank">
+              <span class="btn-icon">🔷</span> Открыть Gemini
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://sheets.google.com" target="_blank">Google Sheets с Gemini</a>
+              <a class="resource-link" href="https://support.google.com/docs/answer/14218565" target="_blank">Официальная документация</a>
+              <a class="resource-link" href="https://one.google.com/about/plans" target="_blank">Тарифы Google AI</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grok -->
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(80,80,80,0.3));">⚡</div>
+            <div class="card-meta">
+              <div class="card-name">Grok (xAI)</div>
+              <div class="card-subtitle">xAI · Elon Musk · Free tier</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Free tier · лимит/день</span>
+            <span class="badge badge-new">Grok 4.1</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Один из самых доступных мощных ИИ — бесплатный тариф на grok.com даёт доступ к Grok 4.1 с суточными лимитами (для офисных задач хватает). Читает Excel-файлы до 30 МБ, пишет VBA и формулы, имеет доступ к актуальным данным из интернета в реальном времени.</p>
+          <ul class="card-features">
+            <li>Free tier без карты — Grok 4.1 с дневными лимитами запросов</li>
+            <li>Загружает Excel-файлы до 30 МБ — анализирует сразу</li>
+            <li>Реальное время: ищет актуальные данные прямо во время ответа</li>
+            <li>VBA, формулы, Power Query M-код — на русском языке</li>
+            <li>2 млн токенов контекста — читает огромные книги целиком</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Как начать бесплатно (Windows 11) <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Вход без регистрации карты</div>
+              <p>Откройте браузер → перейдите на <strong style="color:var(--text)">grok.com</strong> → войдите через аккаунт X (Twitter) или создайте новый (бесплатно). Всё — бесплатный Grok 4 доступен. Никакой карты, никакого триала. Если есть X Premium ($8/мес) — лимиты выше.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Загрузка Excel-файла</div>
+              <p>В интерфейсе Grok нажмите иконку <strong style="color:var(--text)">📎 (скрепка)</strong> → выберите ваш .xlsx файл (до 30 МБ) → файл загружен. Grok читает структуру, все листы и формулы. Можно загружать до 20 файлов за сессию.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Промпты для формул и VBA</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для VBA (работает отлично)</div>
+                <div class="prompt-text">Напиши VBA-макрос для Excel на Windows 11: проходит по листу «Данные», находит все строки где в столбце E значение пустое, копирует значение из ячейки выше, преобразует столбцы B и C из текста в число (убрать пробелы, запятую заменить на точку). Код с комментариями на русском, с обработкой ошибок.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Фишка: актуальные данные в реальном времени</div>
+              <p>Grok единственный из всех бесплатных ИИ умеет искать актуальную информацию прямо во время ответа. Например: «Какой сейчас курс USD/RUB? Подставь в мою таблицу расчёта валютных рисков». Это не было доступно в ChatGPT и Claude на бесплатных тарифах.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://grok.com" target="_blank">
+              <span class="btn-icon">⚡</span> Открыть Grok
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://x.ai/grok" target="_blank">Страница продукта xAI</a>
+              <a class="resource-link" href="https://docs.x.ai/docs" target="_blank">Документация xAI</a>
+              <a class="resource-link" href="https://x.ai/blog" target="_blank">Блог xAI</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: Формулы и VBA -->
+<section class="section" id="formulas">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(0,212,170,0.1);">📐</div>
+      <div class="section-tag">Раздел 2</div>
+      <h2 class="section-title">Формулы, макросы <span>и VBA</span></h2>
+      <p class="section-desc">ИИ пишет любую формулу по описанию задачи. Никакого Stack Overflow и часового гугления — просто объясните что нужно сделать.</p>
+    </div>
+
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(0,212,170,0.25), rgba(0,150,120,0.15));">🧮</div>
+            <div class="card-meta">
+              <div class="card-name">ChatGPT / Claude / Gemini / Grok</div>
+              <div class="card-subtitle">Универсальный генератор формул</div>
+            </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Freemium</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Самый мощный способ — описать задачу на русском языке в чате. ChatGPT, Claude, Gemini и Grok понимают контекст финансовых задач и пишут XLOOKUP, LAMBDA, формулы массивов, а также VBA-макросы любой сложности. Grok — бесплатно, Gemini — бесплатно в Sheets.</p>
+          <ul class="card-features">
+            <li>XLOOKUP, INDEX+MATCH, SUMPRODUCT — по описанию задачи</li>
+            <li>Пишет и объясняет VBA-макросы — даже сложные</li>
+            <li>LAMBDA-функции с документацией</li>
+            <li>Отлаживает существующие формулы с ошибками</li>
+            <li>Объясняет чужой код VBA строка за строкой</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Примеры промптов для формул <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Как работать — алгоритм</div>
+              <p>1. Откройте claude.ai или chatgpt.com в браузере рядом с Excel.<br>2. Опишите задачу: укажите название столбцов, откуда берутся данные, что должна вернуть формула.<br>3. Вставьте формулу в Excel → проверьте на 3–5 строках вручную.<br>4. Если не работает — скопируйте сообщение об ошибке (#VALUE!, #REF! и т.д.) обратно в чат.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Пример 1 — XLOOKUP с несколькими справочниками</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт</div>
+                <div class="prompt-text">Напиши формулу Excel: ищет ИНН из ячейки A2 в столбце D на листе «Контрагенты», возвращает значение из столбца G. Если не найден — «Не найден». Используй XLOOKUP.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Пример 2 — VBA-макрос для консолидации</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для VBA</div>
+                <div class="prompt-text">Напиши VBA-макрос для Excel: проходит по всем листам книги (кроме «Сводная»), копирует данные из диапазона A2:F1000 (до первой пустой строки) на лист «Сводная». Перед копированием очищает «Сводная». Добавь столбец с именем листа-источника.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Пример 3 — Отладка ошибки</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для отладки</div>
+                <div class="prompt-text">Эта формула выдаёт ошибку #VALUE!: [вставь формулу]. Данные в столбце C — текстовые числа из выгрузки 1С. Исправь формулу и объясни в чём была проблема.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы — открыть прямо сейчас</div>
+            <div class="resource-btn-grid">
+              <a class="resource-btn" href="https://claude.ai" target="_blank">
+                <span class="btn-icon">🔮</span> Claude
+              </a>
+              <a class="resource-btn" href="https://chatgpt.com" target="_blank">
+                <span class="btn-icon">🟢</span> ChatGPT
+              </a>
+              <a class="resource-btn" href="https://gemini.google.com" target="_blank">
+                <span class="btn-icon">🔷</span> Gemini
+              </a>
+              <a class="resource-btn" href="https://grok.com" target="_blank">
+                <span class="btn-icon">⚡</span> Grok
+              </a>
+            </div>
+            <div class="resource-links">
+              <a class="resource-link" href="https://support.microsoft.com/ru-ru/office/excel-%D1%84%D1%83%D0%BD%D0%BA%D1%86%D0%B8%D0%B8-справочник-47c76152-a03a-43b3-b6bc-fb86e59cfe63" target="_blank">Справочник функций Excel</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(124,92,255,0.25), rgba(80,50,200,0.15));">⚗️</div>
+            <div class="card-meta">
+            <div class="card-name">Ajelix / Formula Bot</div>
+            <div class="card-subtitle">Специализированные генераторы</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Free / $9/мес</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Специализированные сервисы для генерации формул прямо в браузере. Поддерживают Excel, Google Sheets. Ajelix дополнительно генерирует шаблоны отчётов и простые автоматизации.</p>
+          <ul class="card-features">
+            <li>Интерфейс «вопрос → формула» без лишнего контекста</li>
+            <li>Поддержка Google Sheets, Excel, Airtable</li>
+            <li>Объяснение любой вставленной формулы</li>
+            <li>Бесплатный tier достаточен для большинства задач</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Когда использовать Ajelix vs ChatGPT <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Ajelix — быстрые разовые задачи без контекста</div>
+              <p>Зайдите на <strong style="color:var(--text)">ajelix.com</strong> → раздел <strong style="color:var(--text)">Excel Formula Generator</strong> → опишите задачу на русском → получите формулу + объяснение + примеры. Бесплатный тариф покрывает большинство запросов. Быстрее, чем открывать полноценный чат.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">ChatGPT/Claude — сложные задачи с контекстом</div>
+              <p>Когда нужно описать структуру таблицы, откуда берутся данные, какая логика нужна — или когда формула часть большего макроса. ChatGPT/Claude удержат контекст всего разговора.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаблон промпта для любого VBA-макроса</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Универсальный шаблон</div>
+                <div class="prompt-text">Напиши VBA-макрос. Задача: [описание]. Условия: [ограничения]. Требования: без жёстко прописанных диапазонов, с обработкой ошибок On Error GoTo, с комментариями на русском. Оформление: выравнивание по стандарту Microsoft.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://ajelix.com/excel-formula-generator/" target="_blank">
+              <span class="btn-icon">⚗️</span> Ajelix Formula Generator
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://appsource.microsoft.com/en-us/product/office/WA200005401" target="_blank">Ajelix в AppSource</a>
+              <a class="resource-link" href="https://formulabot.com" target="_blank">Formula Bot (альтернатива)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(200,50,50,0.1));">🔥</div>
+            <div class="card-meta">
+            <div class="card-name">DeepSeek для VBA</div>
+            <div class="card-subtitle">Бесплатная альтернатива для кода</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-free">Бесплатно</span>
+            <span class="badge badge-ru">Русский</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">DeepSeek-V3 — неожиданно мощный в генерации VBA и формул, работает на русском, доступен бесплатно через сайт или API. Хороший выбор когда нет подписки на Claude/GPT.</p>
+          <ul class="card-features">
+            <li>Полностью бесплатен, нет ограничений на запросы</li>
+            <li>Понимает русский язык без потери качества кода</li>
+            <li>Очень хорош для написания длинных VBA-процедур</li>
+            <li>Также пишет Python для обработки Excel через pandas</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 DeepSeek для автоматизации выгрузок <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Как начать (Windows 11)</div>
+              <p>Откройте браузер → перейдите на <strong style="color:var(--text)">chat.deepseek.com</strong> → зарегистрируйтесь (достаточно email) → выберите модель <strong style="color:var(--text)">DeepSeek-V3</strong>. Для сложных задач с рассуждением — <strong style="color:var(--text)">DeepSeek-R1</strong>. Пишите запрос на русском — качество не хуже, чем на английском.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Сценарий: очистка данных из 1С</div>
+              <p>Выгрузки из 1С приходят с «мусором»: объединёнными ячейками, итоговыми строками посередине, текстовыми числами. Промпт ниже генерирует готовый макрос очистки.</p>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт (на русском)</div>
+                <div class="prompt-text">Напиши VBA-макрос очистки данных для выгрузки из 1С: 1) Удали все строки где в столбце A слово «Итого» или «Всего»; 2) Преобразуй столбцы C:F из текста в числа (убери пробелы и замени запятую на точку); 3) Заполни пустые ячейки в столбце A значением из ячейки выше; 4) Удали полностью пустые строки. Код с комментариями на русском.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Как вставить VBA-макрос в Excel</div>
+              <p>Скопируйте код → в Excel нажмите <strong style="color:var(--text)">Alt + F11</strong> (открывается редактор VBA) → <strong style="color:var(--text)">Insert → Module</strong> → вставьте код → <strong style="color:var(--text)">F5</strong> для запуска или <strong style="color:var(--text)">Alt + F8</strong> из Excel для выбора макроса.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://chat.deepseek.com" target="_blank">
+              <span class="btn-icon">🔥</span> Открыть DeepSeek Chat
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://deepseek.com" target="_blank">Сайт DeepSeek</a>
+              <a class="resource-link" href="https://api-docs.deepseek.com" target="_blank">DeepSeek API (для разработчиков)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: Большие данные -->
+<section class="section" id="bigdata">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(255,179,71,0.1);">🗄️</div>
+      <div class="section-tag">Раздел 3</div>
+      <h2 class="section-title">Большие данные <span>и анализ</span></h2>
+      <p class="section-desc">Когда Excel «задумывается» или файл весит больше 50 МБ — пора подключать специализированные ИИ-инструменты для работы с большими массивами.</p>
+    </div>
+
+    <div class="warning-box" style="margin-bottom:24px">
+      <div class="icon">⚠️</div>
+      <p><strong>Лимит Excel:</strong> 1 048 576 строк, деградация производительности от ~300 000 строк. Если данных больше — рассмотрите инструменты ниже или переход на Power Query + Power Pivot.</p>
+    </div>
+
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(255,179,71,0.25), rgba(200,120,0,0.15));">⚡</div>
+            <div class="card-meta">
+            <div class="card-name">Julius AI</div>
+            <div class="card-subtitle">ИИ-аналитик для данных</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Free / $22/мес</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Загружаете CSV или Excel-файл, спрашиваете на естественном языке. Julius строит графики, считает статистику, обнаруживает аномалии — и всё это с объяснениями. Идеален для разовых глубоких анализов.</p>
+          <ul class="card-features">
+            <li>Работает с файлами до нескольких миллионов строк</li>
+            <li>Строит гистограммы, boxplot, scatter автоматически</li>
+            <li>Выявляет выбросы и аномалии без настройки</li>
+            <li>Создаёт повторяющиеся отчёты по расписанию</li>
+            <li>Спрашивает на русском — понимает хорошо</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Сценарий: анализ транзакций <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Как начать (Windows 11)</div>
+              <p>Откройте <strong style="color:var(--text)">julius.ai</strong> в браузере → зарегистрируйтесь (Google или email) → на главном экране нажмите <strong style="color:var(--text)">Upload File</strong> → загрузите .xlsx или .csv → задавайте вопросы в текстовом поле. Бесплатный тариф: до 15 запросов в месяц.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Кейс: поиск аномальных транзакций</div>
+              <p>У вас файл из 500 000 банковских транзакций. Нужно найти подозрительные суммы и контрагентов.</p>
+              <div class="prompt-block">
+                <div class="prompt-label">Запрос в Julius</div>
+                <div class="prompt-text">Найди все транзакции, которые статистически аномальны (больше 3 стандартных отклонений от среднего по типу операции). Сгруппируй по контрагентам, покажи топ-10 подозрительных. Визуализируй распределение сумм по месяцам.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Что Julius выдаёт на выходе</div>
+              <p>Готовый Excel-файл с расчётами → скачайте через кнопку <strong style="color:var(--text)">Download</strong>. Python-скрипт который делал анализ → можно повторить позже. PNG/SVG графиков для презентации → через <strong style="color:var(--text)">Export Chart</strong>.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://julius.ai" target="_blank">
+              <span class="btn-icon">⚡</span> Открыть Julius AI
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://julius.ai/pricing" target="_blank">Тарифы</a>
+              <a class="resource-link" href="https://julius.ai/blog" target="_blank">Примеры использования</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(79,142,255,0.25), rgba(40,80,200,0.15));">🔁</div>
+            <div class="card-meta">
+            <div class="card-name">Power Query + ИИ</div>
+            <div class="card-subtitle">Microsoft · Встроено в Excel</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-free">Бесплатно</span>
+            <span class="badge badge-ru">В каждом Excel</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Power Query уже в Excel — ИИ поможет написать нужные трансформации. Связка «ИИ пишет M-код → Power Query выполняет» снимает необходимость учить язык M. Обрабатывает миллионы строк без проблем.</p>
+          <ul class="card-features">
+            <li>Данные: Excel, CSV, базы данных, веб, JSON, XML</li>
+            <li>Автоматическое обновление при изменении источника</li>
+            <li>ИИ пишет M-код по описанию задачи</li>
+            <li>Объединение файлов из папки — одна кнопка</li>
+            <li>Работает в связке с Power Pivot для расчётов DAX</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 ИИ для Power Query M-код <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Как открыть Power Query (Windows 11)</div>
+              <p>Excel → вкладка <strong style="color:var(--text)">Данные (Data)</strong> → <strong style="color:var(--text)">Получить данные (Get Data)</strong> → выберите источник. Для вставки M-кода: в редакторе Power Query → <strong style="color:var(--text)">Главная → Расширенный редактор (Advanced Editor)</strong> → вставьте код → <strong style="color:var(--text)">Готово → Закрыть и загрузить</strong>.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Промпт для M-кода</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт</div>
+                <div class="prompt-text">Напиши M-код для Power Query. Задача: взять таблицу транзакций, столбец «Дата» привести к типу Date, столбец «Сумма» очистить от пробелов и привести к числу, добавить столбец «Квартал» (Q1–Q4 на основе даты), отфильтровать строки где Сумма > 0, сгруппировать по Контрагенту и Кварталу с суммой и количеством транзакций.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://learn.microsoft.com/ru-ru/power-query/power-query-what-is-power-query" target="_blank">
+              <span class="btn-icon">🔁</span> Документация Power Query
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://learn.microsoft.com/ru-ru/powerquery-m/power-query-m-function-reference" target="_blank">Справочник M-функций</a>
+              <a class="resource-link" href="https://support.microsoft.com/ru-ru/office/power-query-для-excel-справка-2b433a85-ddfb-420b-9cda-fe0e60b82a94" target="_blank">Power Query в Excel</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(0,212,170,0.2), rgba(0,150,120,0.1));">🐍</div>
+            <div class="card-meta">
+            <div class="card-name">Python + pandas через ИИ</div>
+            <div class="card-subtitle">Code Interpreter · Продвинутый уровень</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-free">Бесплатно</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">ChatGPT Code Interpreter и Claude могут написать Python-скрипт для обработки Excel, который потом запускается локально. Без ограничений по объёму, без зависаний — идеально для регулярных задач.</p>
+          <ul class="card-features">
+            <li>pandas обрабатывает файлы любого размера</li>
+            <li>Скрипт можно запускать автоматически по расписанию</li>
+            <li>openpyxl сохраняет форматирование Excel</li>
+            <li>Не нужно знать Python — ИИ пишет весь код</li>
+            <li>Идеально для ежемесячных повторяющихся отчётов</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Скрипт для консолидации файлов <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Установка Python (Windows 11)</div>
+              <p>Откройте браузер → <strong style="color:var(--text)">python.org/downloads</strong> → скачайте последний Python 3.x → запустите установщик → обязательно поставьте галочку <strong style="color:var(--text)">«Add Python to PATH»</strong> → Install Now. После установки откройте <strong style="color:var(--text)">Пуск → cmd</strong> → введите <code style="color:var(--accent3);font-family:'JetBrains Mono',monospace">pip install pandas openpyxl</code>.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Получаем скрипт от ИИ</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для ChatGPT/Claude</div>
+                <div class="prompt-text">Напиши Python-скрипт с pandas: берёт все .xlsx файлы из папки C:\Reports\2025\, на каждом читает лист «Данные», добавляет столбец «Источник» с именем файла, объединяет все таблицы в одну, убирает дубликаты по столбцу «ID транзакции», сохраняет в C:\Reports\consolidated.xlsx с жирной шапкой и синим фоном заголовка.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Запуск скрипта</div>
+              <p>Сохраните полученный код как файл <strong style="color:var(--text)">consolidate.py</strong> в любую папку. Откройте <strong style="color:var(--text)">Пуск → cmd</strong> → введите <code style="color:var(--accent3);font-family:'JetBrains Mono',monospace">python C:\путь\consolidate.py</code> → Enter. Для автозапуска по расписанию: <strong style="color:var(--text)">Пуск → Планировщик заданий</strong> → Создать задачу → указать путь к python.exe и скрипту.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://www.python.org/downloads/" target="_blank">
+              <span class="btn-icon">🐍</span> Скачать Python
+            </a>
+            <div class="resource-links">
+              <a class="resource-link" href="https://pandas.pydata.org/docs/" target="_blank">Документация pandas</a>
+              <a class="resource-link" href="https://openpyxl.readthedocs.io" target="_blank">openpyxl для Excel</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: Финмоделинг -->
+<section class="section" id="finance">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(124,92,255,0.1);">📊</div>
+      <div class="section-tag">Раздел 4</div>
+      <h2 class="section-title">Финансовое <span>моделирование</span></h2>
+      <p class="section-desc">ИИ-инструменты для бюджетирования, план-факта, ДДС, прогнозирования и управленческой отчётности. Для тех, кто строит модели, а не просто таблицы.</p>
+    </div>
+
+    <div class="highlight-box">
+      <div class="highlight-box-title">🎯 Ключевой принцип: аудируемость</div>
+      <p>В финансах «чёрный ящик» — это риск. Инструменты ниже сгруппированы по принципу: дают ли они формулы (можно проверить логику) или только готовые числа (нельзя объяснить CFO). Для серьёзных задач выбирайте только те, что выдают формулы со ссылками.</p>
+    </div>
+
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(124,92,255,0.25), rgba(80,40,200,0.15));">🏗️</div>
+            <div class="card-meta">
+            <div class="card-name">Shortcut AI</div>
+            <div class="card-subtitle">Автономный Excel-агент</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-paid">От $49/мес</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Автономный агент для Excel: строит DCF, ДДС, три-statement-модели из промпта. Показывает каждое изменённое значение, почему что hardcoded, и можно откатить любое действие. Цикл: план → выполни → проверь.</p>
+          <ul class="card-features">
+            <li>Строит финмодели из текстового описания</li>
+            <li>Показывает changelog каждого изменения</li>
+            <li>Все формулы — динамические ссылки, не hardcode</li>
+            <li>Профессиональное форматирование по стандартам</li>
+            <li>Веб-версия + нативный Excel-плагин</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Установка и кейс: бюджет ДДС <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Установка плагина (Windows 11)</div>
+              <p>Перейдите на <strong style="color:var(--text)">shortcut.ai</strong> → зарегистрируйтесь → в личном кабинете выберите <strong style="color:var(--text)">«Excel Plugin»</strong> → скачайте установщик → запустите .exe → Excel перезапустится с новой вкладкой <strong style="color:var(--text)">Shortcut</strong> на ленте. Альтернативно: Excel → Home → Add-ins → поиск «Shortcut AI».</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Первый запрос: модель ДДС</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для Shortcut</div>
+                <div class="prompt-text">Создай модель ДДС на 12 месяцев 2025 года. Три блока: операционная, инвестиционная, финансовая деятельность. Строки вводных данных — отдельная вкладка «Допущения». Итоговый остаток — нарастающим итогом. Все цифры — формулы-ссылки на «Допущения». Форматирование: заголовки жирные, числа в формате # ##0, отрицательные красным.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Проверка результата</div>
+              <p>Shortcut показывает <strong style="color:var(--text)">changelog</strong> — список всех изменённых ячеек с объяснением. Проверьте 2–3 итоговые формулы вручную (кликните на ячейку → посмотрите строку формул). Если что-то не так — нажмите <strong style="color:var(--text)">Undo</strong> и уточните запрос.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">⚠️ Важно перед отправкой CFO</div>
+              <p>Даже хороший ИИ-агент может ошибиться в логике расчёта. Всегда верифицируйте итоговые цифры на нескольких строках вручную. Правило: «ИИ строит скелет, вы проверяете логику».</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://shortcut.ai" target="_blank">
+              <span class="btn-icon">🏗️</span> Официальный сайт Shortcut AI
+            </a>
+            <a class="resource-btn" href="https://shortcut.ai/blog" target="_blank">
+              <span class="btn-icon">📖</span> Блог и обучающие материалы
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(79,142,255,0.25), rgba(40,80,200,0.15));">🗂️</div>
+            <div class="card-meta">
+            <div class="card-name">Datarails / Pigment</div>
+            <div class="card-subtitle">FP&A платформы</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-paid">Энтерпрайз</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Datarails — живёт поверх Excel, консолидирует книги из всего департамента в единую основу данных. Pigment — сценарный движок: «покажи что будет с EBITDA если выручка упадёт на 10%».</p>
+          <ul class="card-features">
+            <li>Datarails: консолидация десятков книг без ручного труда</li>
+            <li>Storyboards: автоматический нарратив к цифрам</li>
+            <li>Pigment: мгновенные сценарии base/upside/downside</li>
+            <li>Синхронизация изменений между связанными файлами</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Когда нужны и как начать <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Datarails: запрос демо</div>
+              <p>Datarails продаётся через отдел продаж — перейдите на <strong style="color:var(--text)">datarails.com</strong> → «Get a Demo» → заполните форму. Обычно демо занимает 30 минут, после чего дают trial-доступ. Совместим с Excel на Windows 11 как Add-in.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Datarails — если у вас более 5 пользователей Excel</div>
+              <p>Типичная боль: каждый отдел ведёт свою версию бюджета, финансисты вручную консолидируют. Datarails убирает эту боль — все работают в Excel, данные собираются автоматически в единую базу.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Pigment: сценарный анализ за 5 минут</div>
+              <p>Зайдите на <strong style="color:var(--text)">pigment.com</strong> → «Start free trial» → подключите свои данные через CSV или Excel-импорт → создайте первую модель из шаблона. Меняете один драйвер (например, выручку) — все связанные показатели пересчитываются мгновенно.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://www.datarails.com" target="_blank">
+              <span class="btn-icon">🗂️</span> Datarails — официальный сайт
+            </a>
+            <a class="resource-btn" href="https://www.pigment.com" target="_blank">
+              <span class="btn-icon">📊</span> Pigment — официальный сайт
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(0,212,170,0.2), rgba(0,150,120,0.1));">🧠</div>
+            <div class="card-meta">
+            <div class="card-name">Claude / ChatGPT как аналитик</div>
+            <div class="card-subtitle">Без подписки на спец. инструменты</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Freemium</span>
+            <span class="badge badge-ru">Лучший старт</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Не нужно покупать дорогие FP&A-платформы. Claude и ChatGPT уже сейчас могут построить финмодель — просто загрузите данные и опишите что нужно. 80% задач решается бесплатно.</p>
+          <ul class="card-features">
+            <li>Загрузите Excel → получите анализ + рекомендации</li>
+            <li>Строит логику план-факта, ДДС, P&L из описания</li>
+            <li>Проверяет ошибки в уже существующих моделях</li>
+            <li>Пишет комментарии к отклонениям для отчёта</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Как загружать файл и работать с данными <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Загрузка файла (Windows 11)</div>
+              <p>Откройте <strong style="color:var(--text)">claude.ai</strong> или <strong style="color:var(--text)">chat.openai.com</strong> в браузере → нажмите иконку скрепки (📎) рядом с полем ввода → выберите ваш .xlsx файл. Лимит: до 32 МБ для Claude, до 512 МБ для ChatGPT Plus. Если файл больше — экспортируйте нужные листы отдельно.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Анализ отклонений</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт</div>
+                <div class="prompt-text">Я прикладываю файл Excel с планом и фактом за Q2. Найди все статьи, где отклонение превышает 10%. Для каждой напиши: 1) возможные причины отклонения, 2) на что обратить внимание при подготовке Q3. Стиль ответа — как пишет финансовый контролер в управленческом отчёте.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Прогнозирование</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт</div>
+                <div class="prompt-text">У меня данные о выручке за 24 месяца (прилагаю). Построй прогноз на следующие 6 месяцев тремя методами: 1) скользящее среднее, 2) линейный тренд, 3) с учётом сезонности. Покажи уверенный интервал ±15%. Напиши формулы Excel для каждого метода.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">💡 Лайфхак: давайте контекст</div>
+              <p>Перед любым анализом напишите одно вводное предложение: «Это отчёт о движении денежных средств производственной компании, период — Q1 2025, валюта — рубли». Качество ответа вырастет значительно.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://claude.ai" target="_blank">
+              <span class="btn-icon">🔮</span> Открыть Claude
+            </a>
+            <a class="resource-btn" href="https://chat.openai.com" target="_blank">
+              <span class="btn-icon">🟢</span> Открыть ChatGPT
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: 1С → Excel -->
+<section class="section" id="one-c">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(255,107,107,0.1);">🔗</div>
+      <div class="section-tag">Раздел 5</div>
+      <h2 class="section-title">1С → Excel <span>→ ИИ</span></h2>
+      <p class="section-desc">68% российских компаний до сих пор выгружают данные из 1С вручную, теряя до 4 часов в день. Вот как выстроить автоматическую цепочку.</p>
+    </div>
+
+    <div class="wide-card" style="margin-bottom: 24px;">
+      <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 24px; letter-spacing: -0.02em;">Схема выгрузки данных из 1С в Excel</h3>
+      <div class="wide-card-grid">
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-num">1</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">Прямая кнопка «Выгрузить в Excel»</div>
+              <div class="flow-step-desc">Самый простой способ — встроена в большинство отчётов 1С. Минус: нужно делать вручную каждый раз. Подходит для разовых выгрузок.</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-num">2</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">Регламентное задание + планировщик Windows</div>
+              <div class="flow-step-desc">Настраиваете автоматическую выгрузку в 1С через регламентные задания. Планировщик Windows запускает по расписанию — файл появляется в папке каждое утро.</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-num">3</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">OData-протокол → Power BI / Power Query</div>
+              <div class="flow-step-desc">1С поддерживает OData — можно подключить Power Query напрямую без выгрузки файлов. Данные обновляются при открытии книги. ИИ напишет нужные M-трансформации.</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-num">4</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">Экстрактор 1С → BI (без программиста)</div>
+              <div class="flow-step-desc">Специализированный коннектор — настраивается без разработчика. Поддерживает Yandex DataLens, Power BI, Google Data Studio. Данные обновляются автоматически.</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;">Типичные проблемы выгрузок</h4>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: rgba(255,107,107,0.06); border: 1px solid rgba(255,107,107,0.15); border-radius: 10px; padding: 12px 14px;">
+              <div style="font-size: 12px; font-weight: 700; color: rgba(255,107,107,0.9); margin-bottom: 4px;">Текстовые числа</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Суммы приходят с пробелами и запятой как разделителем. Формулы не считают. → ИИ напишет макрос очистки за 30 секунд.</div>
+            </div>
+            <div style="background: rgba(255,179,71,0.06); border: 1px solid rgba(255,179,71,0.15); border-radius: 10px; padding: 12px 14px;">
+              <div style="font-size: 12px; font-weight: 700; color: rgba(255,179,71,0.9); margin-bottom: 4px;">Итоговые строки посередине</div>
+              <div style="font-size: 12px; color: var(--text-muted);">«Итого по разделу» вставлены между данными — ломают сводные таблицы. → VBA по промпту удалит их автоматически.</div>
+            </div>
+            <div style="background: rgba(79,142,255,0.06); border: 1px solid rgba(79,142,255,0.15); border-radius: 10px; padding: 12px 14px;">
+              <div style="font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 4px;">Объединённые ячейки</div>
+              <div style="font-size: 12px; color: var(--text-muted);">Шапки и группы объединены — нельзя использовать как таблицу. → Макрос разъединит и заполнит пустые ячейки.</div>
+            </div>
+            <div style="background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.15); border-radius: 10px; padding: 12px 14px;">
+              <div style="font-size: 12px; font-weight: 700; color: var(--accent3); margin-bottom: 4px;">Разные форматы дат</div>
+              <div style="font-size: 12px; color: var(--text-muted);">1С выгружает даты как текст «01.03.2025» — Excel не сортирует, формулы не считают разницу. → Power Query или VBA приводит к типу Date.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-grid">
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(200,50,50,0.1));">🔴</div>
+            <div class="card-meta">
+            <div class="card-name">Экстрактор 1С</div>
+            <div class="card-subtitle">Денвик · Российский рынок</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-paid">Платно</span>
+            <span class="badge badge-ru">🇷🇺 Россия</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Специализированный ETL-коннектор для российского рынка. Выгружает данные из 1С в BI-системы без программиста. Участник «ETL-круг Громова 2025». Не требует открытого доступа к базе 1С.</p>
+          <ul class="card-features">
+            <li>Настройка без участия 1С-программиста</li>
+            <li>Поддержка Yandex DataLens, Power BI, Tableau</li>
+            <li>1С остаётся закрытой — безопасность данных</li>
+            <li>Автоматическое расписание выгрузок</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Схема: 1С → Excel → ИИ → отчёт к 9:00 <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Заявка на Экстрактор 1С</div>
+              <p>Перейдите на <strong style="color:var(--text)">denvic.tech</strong> → «Оставить заявку» → после подтверждения получаете дистрибутив. Установщик (.exe) запускается на Windows 11 — не требует прав администратора. Настройка занимает около 2 часов с менеджером по онбордингу.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Настройка расписания выгрузки</div>
+              <p>В интерфейсе Экстрактора: <strong style="color:var(--text)">Источники → Добавить 1С</strong> → укажите путь к базе → выберите нужные регистры (ДДС, ОСВ, продажи) → <strong style="color:var(--text)">Расписание</strong> → «Ежедневно в 06:30». Данные будут автоматически попадать в целевую БД или папку.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — ИИ-анализ выгрузки</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для Claude / ChatGPT после выгрузки</div>
+                <div class="prompt-text">Это выгрузка ДДС из 1С за текущий месяц (лист «Данные»). Проведи анализ: 1) Сравни с прошлым месяцем (лист «Предыдущий»); 2) Определи топ-5 статей роста расходов; 3) Рассчитай остаток денег на конец месяца при текущем темпе; 4) Напиши вывод в 4 предложения для директора.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://denvic.tech" target="_blank">
+              <span class="btn-icon">🔴</span> Экстрактор 1С — официальный сайт
+            </a>
+            <a class="resource-btn" href="https://its.1c.ru/db/metod8dev#content:2848:hdoc" target="_blank">
+              <span class="btn-icon">📚</span> 1С: документация по выгрузкам
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(255,50,50,0.2), rgba(255,100,0,0.1));">📬</div>
+            <div class="card-meta">
+            <div class="card-name">1С → Google Sheets → BI</div>
+            <div class="card-subtitle">Лайфхак без программиста</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-free">Почти бесплатно</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Хитрая схема: 1С умеет отправлять отчёты по email → настраиваем почтовую рассылку в 1С → Google Apps Script парсит вложения → данные падают в Google Sheets → подключаем DataLens.</p>
+          <ul class="card-features">
+            <li>Не требует программиста и доступа к базе 1С</li>
+            <li>Работает с любой конфигурацией 1С</li>
+            <li>Бесплатно — только Google Workspace или личный аккаунт</li>
+            <li>DataLens или Looker Studio для визуализации</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Пошаговая схема <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Почтовая рассылка в 1С</div>
+              <p>В 1С: Регламентные задания → создаём задание, которое формирует нужный отчёт и отправляет на служебный Gmail-ящик каждое утро в 7:00.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Google Apps Script парсинг</div>
+              <p>Попросите ChatGPT/Claude написать Apps Script, который берёт последнее письмо с определённой темой, извлекает вложение Excel и переносит данные в Google Sheets.</p>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для скрипта</div>
+                <div class="prompt-text">Напиши Google Apps Script: ищет в Gmail письмо с темой «Отчёт ДДС» за сегодня, берёт вложение .xlsx, копирует данные из первого листа в Google Sheet с ID [ID таблицы], начиная с A2. Очищает старые данные перед вставкой.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Подключение Yandex DataLens</div>
+              <p>Yandex DataLens умеет подключаться к Google Sheets как источнику данных. Строите дашборд раз — он обновляется автоматически каждое утро.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://script.google.com" target="_blank">
+              <span class="btn-icon">⚙️</span> Google Apps Script — редактор
+            </a>
+            <a class="resource-btn" href="https://datalens.yandex.cloud" target="_blank">
+              <span class="btn-icon">📊</span> Yandex DataLens — открыть
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: Визуализация -->
+<section class="section" id="visual">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(0,212,170,0.1);">✨</div>
+      <div class="section-tag">Раздел 6</div>
+      <h2 class="section-title">Визуализация <span>за пределами Excel</span></h2>
+      <p class="section-desc">Стандартные диаграммы Excel подходят для внутренних таблиц. Для презентаций директорату и интерактивных дашбордов — другой уровень инструментов.</p>
+    </div>
+
+    <div class="tool-grid">
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(255,50,50,0.2), rgba(200,0,0,0.1));">📈</div>
+            <div class="card-meta">
+            <div class="card-name">Yandex DataLens</div>
+            <div class="card-subtitle">Яндекс · Российский рынок</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-free">Бесплатно</span>
+            <span class="badge badge-ru">🇷🇺 Россия</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Мощный бесплатный BI-инструмент от Яндекса. Подключается к 1С через OData или Google Sheets. Интерактивные дашборды с фильтрами, drill-down, публичными ссылками. Не требует знания SQL.</p>
+          <ul class="card-features">
+            <li>Полностью бесплатен для большинства сценариев</li>
+            <li>Подключение к 1С, Excel, Google Sheets, PostgreSQL</li>
+            <li>Интерактивные фильтры и срезы без кода</li>
+            <li>Публичные ссылки — поделиться с кем угодно</li>
+            <li>Работает без VPN в России</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Быстрый старт: дашборд за 20 минут <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Регистрация и вход (Windows 11)</div>
+              <p>Откройте браузер → перейдите на <strong style="color:var(--text)">datalens.yandex.cloud</strong> → войдите через Яндекс ID (если нет — зарегистрируйтесь бесплатно) → нажмите <strong style="color:var(--text)">«Создать подключение»</strong>.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Подключение Excel-файла</div>
+              <p>Подключение → <strong style="color:var(--text)">«Файлы»</strong> → загрузите ваш .xlsx → система создаст Dataset автоматически. Далее: <strong style="color:var(--text)">Чарты → Создать чарт</strong> → выберите тип (столбчатый, линейный, круговой) → перетащите поля из Dataset в оси X и Y → Сохранить.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Собрать Dashboard</div>
+              <p><strong style="color:var(--text)">Дашборды → Создать дашборд</strong> → добавьте ваши чарты → добавьте виджеты фильтров (по дате, подразделению) → <strong style="color:var(--text)">Опубликовать</strong> → скопируйте ссылку для коллег. Обновление данных — вручную или по расписанию.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">SQL-запрос через ИИ</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для ChatGPT/Claude</div>
+                <div class="prompt-text">Напиши SQL-запрос для Yandex DataLens: из таблицы «transactions» сгруппируй по месяцу (TRUNC(date, 'month')) и категории, посчитай SUM(amount) и COUNT(*). Отфильтруй amount > 0. Отсортируй по месяцу убывающе.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://datalens.yandex.cloud" target="_blank">
+              <span class="btn-icon">📈</span> Открыть Yandex DataLens
+            </a>
+            <a class="resource-btn" href="https://yandex.cloud/ru/docs/datalens/quickstart" target="_blank">
+              <span class="btn-icon">📖</span> Документация — быстрый старт
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(255,179,71,0.2), rgba(200,120,0,0.1));">💛</div>
+            <div class="card-meta">
+            <div class="card-name">Power BI</div>
+            <div class="card-subtitle">Microsoft · Глубокая интеграция с M365</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Free / Pro $10/мес</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Стандарт корпоративной BI в мире. Нативная интеграция с Excel, SharePoint, Teams. Публикация в Teams — все видят актуальный дашборд. ИИ пишет DAX-меры по описанию задачи.</p>
+          <ul class="card-features">
+            <li>Прямое подключение к Excel-файлам на SharePoint</li>
+            <li>DAX — мощный язык расчётов (ИИ пишет за вас)</li>
+            <li>Q&A: задайте вопрос на русском — получите график</li>
+            <li>Публикация в Teams — обновляется автоматически</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 ИИ для DAX-мер <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Установка Power BI Desktop (Windows 11)</div>
+              <p>Перейдите на <strong style="color:var(--text)">powerbi.microsoft.com/ru-ru/downloads</strong> → нажмите <strong style="color:var(--text)">«Скачать бесплатно»</strong> → установите PBIDesktopSetup_x64.exe. После запуска войдите через учётную запись Microsoft 365. Версия для работы внутри организации — Power BI Service (браузер, бесплатно).</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Подключение Excel-файла</div>
+              <p>В Power BI Desktop: <strong style="color:var(--text)">Главная → Получить данные → Excel</strong> → выберите ваш .xlsx → отметьте нужные листы → нажмите <strong style="color:var(--text)">Загрузить</strong>. Данные появятся в панели «Поля» справа.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — DAX-мера через ИИ</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Промпт для ChatGPT/Claude</div>
+                <div class="prompt-text">Напиши DAX-меру для Power BI: вычисляет выручку текущего месяца и сравнивает с аналогичным периодом прошлого года. Выводи: текущий месяц, прошлый год, абсолютное и процентное изменение. Используй CALCULATE, DATEADD, SAMEPERIODLASTYEAR.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Лайфхак: Q&A на русском</div>
+              <p>В Power BI есть визуал «Вопросы и ответы». Введите: «выручка по месяцам за 2024 год в виде линейного графика» — Power BI построит сам. В настройках Q&A добавьте синонимы русских названий полей для лучшего распознавания.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://powerbi.microsoft.com/ru-ru/downloads/" target="_blank">
+              <span class="btn-icon">💛</span> Скачать Power BI Desktop
+            </a>
+            <a class="resource-btn" href="https://app.powerbi.com" target="_blank">
+              <span class="btn-icon">🌐</span> Power BI Service (онлайн)
+            </a>
+            <a class="resource-btn" href="https://learn.microsoft.com/ru-ru/power-bi/fundamentals/desktop-getting-started" target="_blank">
+              <span class="btn-icon">📖</span> Документация — начало работы
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div class="card-header">
+          <div class="card-header-top">
+            <div class="card-icon" style="background: linear-gradient(135deg, rgba(124,92,255,0.2), rgba(80,40,200,0.1));">🎨</div>
+            <div class="card-meta">
+            <div class="card-name">Julius AI / Flourish</div>
+            <div class="card-subtitle">Для презентаций и сторителлинга</div>
+          </div>
+          </div>
+          <div class="card-badges">
+            <span class="badge badge-freemium">Free / $22/мес</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Когда нужны красивые анимированные графики для презентации директорату или публичного отчёта. Julius строит publication-ready визуализации из Excel за один запрос. Flourish — интерактивные инфографики без кода.</p>
+          <ul class="card-features">
+            <li>Waterfall-диаграммы, sankey, bubble chart — в один клик</li>
+            <li>Анимированные bar race-диаграммы (тренды во времени)</li>
+            <li>Экспорт в PNG/SVG/видео для презентаций</li>
+            <li>Flourish: публичные интерактивные инфографики</li>
+          </ul>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide(this)">
+          📖 Создание Waterfall и презентационных графиков <span class="arrow">▼</span>
+        </button>
+        <div class="guide-content">
+          <div class="guide-inner">
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 1 — Загрузка данных в Julius AI</div>
+              <p>Откройте <strong style="color:var(--text)">julius.ai</strong> в браузере → нажмите <strong style="color:var(--text)">«Upload file»</strong> → выберите ваш .xlsx → Julius автоматически распознает структуру. Бесплатно: 3 анализа в день. Pro ($22/мес): без ограничений.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 2 — Waterfall-диаграмма P&L</div>
+              <div class="prompt-block">
+                <div class="prompt-label">Запрос в Julius AI</div>
+                <div class="prompt-text">Загружаю данные о P&L за 2024 год. Построй waterfall-диаграмму: начало — выручка, затем вычитаются себестоимость, операционные расходы, налоги, итог — чистая прибыль. Зелёные бары — положительные, красные — вычеты. Подписи значений на каждом баре. Экспортируй в PNG с прозрачным фоном.</div>
+                <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Шаг 3 — Интерактивная инфографика через Flourish</div>
+              <p>Зайдите на <strong style="color:var(--text)">flourish.studio</strong> → <strong style="color:var(--text)">«New visualization»</strong> → выберите шаблон (Bar chart race, Sankey, Bubble chart) → вставьте данные из Excel в таблицу шаблона → <strong style="color:var(--text)">Publish</strong> → получите публичную ссылку для отправки директору. Бесплатный тариф позволяет делать публичные графики.</p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-title">Альтернатива: Waterfall в Excel через ИИ</div>
+              <p>Если нужно остаться в Excel — попросите ChatGPT/Claude написать VBA-код для waterfall через стандартные гистограммы с невидимым основанием. ИИ знает этот трюк и напишет готовый макрос.</p>
+            </div>
+          </div>
+          <div class="guide-resources">
+            <div class="guide-resources-title">Ресурсы</div>
+            <a class="resource-btn" href="https://julius.ai" target="_blank">
+              <span class="btn-icon">⚡</span> Julius AI — открыть
+            </a>
+            <a class="resource-btn" href="https://flourish.studio" target="_blank">
+              <span class="btn-icon">🌸</span> Flourish — создать инфографику
+            </a>
+            <a class="resource-btn" href="https://vibecoderz.ru/notes/mckinsey-style-dashboards-antigravity-claude" target="_blank">
+              <span class="btn-icon">📝</span> Гайд: McKinsey-дашборд из Excel за вечер
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: Промпты -->
+<section class="section" id="prompts">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(79,142,255,0.1);">💬</div>
+      <div class="section-tag">Раздел 7</div>
+      <h2 class="section-title">Библиотека <span>промптов</span></h2>
+      <p class="section-desc">Готовые промпты для самых частых задач финансиста. Скопируйте, подставьте свои данные — и экономьте часы каждую неделю.</p>
+    </div>
+
+    <div class="prompts-grid">
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">🧹</div>
+          <div class="prompt-card-title">Очистка данных из 1С</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">VBA-макрос</div>
+            <div class="prompt-text">Напиши VBA-макрос очистки выгрузки из 1С. Нужно: убрать строки с «Итого»/«Всего»/«Группа» в столбце A; преобразовать числа из текста (убрать пробелы, заменить «,» на «.») в столбцах с C по F; заполнить пустые ячейки в A значением сверху; снять объединение ячеек; удалить пустые строки. Код с комментариями на русском.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">📋</div>
+          <div class="prompt-card-title">Консолидация листов</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">VBA-макрос</div>
+            <div class="prompt-text">Напиши VBA: проходит по всем листам книги кроме «Сводная» и «Шаблон», копирует данные начиная со строки 2 (шапка на строке 1) до первой пустой строки, вставляет на лист «Сводная» с добавлением столбца «Источник» (имя листа). Перед запуском очищает лист «Сводная» кроме шапки.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">📉</div>
+          <div class="prompt-card-title">Анализ план-факт</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Промпт для Claude/ChatGPT</div>
+            <div class="prompt-text">Я прикладываю Excel с двумя листами: «План» и «Факт» за [период]. Статьи совпадают. Сделай: 1) таблицу план-факт с абс. и % отклонением; 2) выдели красным статьи с перерасходом >10%, зелёным — экономию >5%; 3) напиши топ-3 статьи перерасхода с возможными причинами; 4) итоговый вывод в 3 предложения для руководителя. Всё на русском.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">🔍</div>
+          <div class="prompt-card-title">Поиск дубликатов и ошибок</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Промпт</div>
+            <div class="prompt-text">В прилагаемом Excel — реестр платежей. Найди: 1) дублирующиеся строки по комбинации [дата + контрагент + сумма]; 2) суммы, которые выбиваются статистически (более 3σ от среднего по типу); 3) пустые обязательные поля (колонки ИНН, Сумма, Дата). Выдай три отдельных списка с номерами строк.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">📅</div>
+          <div class="prompt-card-title">Прогноз на следующий квартал</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Промпт</div>
+            <div class="prompt-text">У меня данные о [показатель] за последние 12 месяцев (прилагаю). Построй прогноз на следующие 3 месяца: а) линейный тренд, б) скользящее среднее 3 месяца, в) с учётом сезонного коэффициента. Для каждого метода напиши Excel-формулу, которую я могу вставить в ячейку. Также укажи уровень достоверности каждого метода для этих данных.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">📝</div>
+          <div class="prompt-card-title">Управленческий комментарий</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Промпт для текста</div>
+            <div class="prompt-text">На основе данных в прилагаемом отчёте напиши управленческий комментарий для CFO (200–250 слов): ключевые результаты месяца, 2-3 позитивных момента, 2-3 проблемных направления с возможными причинами, рекомендации на следующий месяц. Стиль: профессиональный, конкретный, без клише. На русском языке.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">⚙️</div>
+          <div class="prompt-card-title">Power Query: очистка данных</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Промпт для M-кода</div>
+            <div class="prompt-text">Напиши M-код Power Query для следующих трансформаций: 1) Удали столбцы кроме [перечисли нужные]; 2) Отфильтруй строки где «Тип» = «Расход»; 3) Столбец «Сумма» — убери пробелы, замени «,» на «.», приведи к числу; 4) Добавь столбец «Квартал» по формуле из поля «Дата»; 5) Группировка по «Контрагент» + «Квартал» с суммой и счётчиком строк.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">🔗</div>
+          <div class="prompt-card-title">Сложная формула XLOOKUP</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Промпт</div>
+            <div class="prompt-text">Напиши формулу Excel: ищет [значение из A2] последовательно в трёх справочниках на листах «Справ1», «Справ2», «Справ3» (все в столбце A), возвращает соответствующее значение из столбца B. Если нашла в первом — берёт оттуда, если нет — пробует следующий. Если нигде — «Не найдено». Используй вложенный XLOOKUP или IFERROR.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">🔍</div>
+          <div class="prompt-card-title">Аудит унаследованной книги</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Сценарий: получил чужой файл на 15 листов — разобраться за 10 минут</div>
+            <div class="prompt-text">Ты видишь эту книгу Excel. Составь полную карту: какие листы есть, как они связаны между собой, откуда берутся ключевые цифры на итоговом листе. Какие 3 допущения больше всего влияют на итоговый результат? Найди все ячейки с жёстко прописанными числами вместо формул-ссылок — они потенциальный источник ошибок. Есть ли циклические ссылки или сломанные формулы?</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">🧾</div>
+          <div class="prompt-card-title">Сверка двух реестров</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Сценарий: сверка выгрузки 1С с банковской выпиской — вместо часов ручной работы</div>
+            <div class="prompt-text">У меня два реестра платежей: лист «1С» и лист «Банк». Ключ сверки — дата + сумма + контрагент. Найди: 1) строки которые есть в «1С» но нет в «Банк»; 2) строки в «Банк» без пары в «1С»; 3) строки где суммы отличаются при совпадении даты и контрагента. Выведи три отдельных списка с номерами строк и значениями. Итого: сколько расхождений каждого типа.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">📅</div>
+          <div class="prompt-card-title">Отчёт закрытия месяца</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Сценарий: каждый месяц создаёшь одинаковый чеклист вручную — автоматизируем</div>
+            <div class="prompt-text">Напиши VBA-макрос: при запуске берёт текущую дату, определяет название месяца, создаёт новый лист «Закрытие [Месяц Год]», копирует туда шаблон чеклиста с листа «Шаблон», в ячейку A1 вставляет заголовок с текущим периодом, в B1 — дату создания. Макрос назначается на кнопку на главном листе. Если лист с таким именем уже существует — выводит предупреждение и не перезаписывает.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">🏷️</div>
+          <div class="prompt-card-title">Массовая классификация строк</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Сценарий: 10 000 строк платежей нужно разнести по статьям ДДС — делаешь вручную</div>
+            <div class="prompt-text">В столбце B — описания платежей. В столбце C нужно проставить категорию ДДС из списка: Аренда / Зарплата / Налоги / Маркетинг / ИТ / Закупки / Прочее. Напиши формулу на основе IFS + ISNUMBER(SEARCH()), которая определяет категорию по ключевым словам в описании (придумай реалистичные ключевые слова для каждой категории). В столбец D добавь метку: «Авто» если категория определена уверенно, «Проверить» если описание не содержит ни одного ключевого слова.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-card-icon">📤</div>
+          <div class="prompt-card-title">Авторассылка отчётов из Excel</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-block">
+            <div class="prompt-label">Сценарий: каждую пятницу отправляешь один и тот же отчёт 5 руководителям вручную</div>
+            <div class="prompt-text">Напиши VBA-макрос: берёт диапазон A1:H50 с листа «Отчёт», сохраняет как отдельный .xlsx в папку C:\Reports\ с именем «Отчёт_[дата в формате ДДММГГГГ].xlsx», затем через Outlook отправляет файл на email-адреса из столбца A листа «Получатели» (сколько бы строк ни было), тема письма — «Еженедельный отчёт [дата]», тело письма — текст из ячейки B1 листа «Шаблон_письма». После отправки выводит сообщение с количеством получателей.</div>
+            <button class="copy-btn" onclick="copyText(this)">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: Сравнение -->
+<section class="section" id="compare">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon" style="background: rgba(124,92,255,0.1);">⚖️</div>
+      <div class="section-tag">Раздел 8</div>
+      <h2 class="section-title">Сравнение <span>инструментов</span></h2>
+      <p class="section-desc">Быстрый гид — что выбрать для вашей задачи. Без лишних слов.</p>
+    </div>
+
+    <div class="compare-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Инструмент</th>
+            <th>Формулы/VBA</th>
+            <th>Финмодели</th>
+            <th>Большие данные</th>
+            <th>Русский язык</th>
+            <th>Работа с 1С</th>
+            <th>Визуализация</th>
+            <th>Цена</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Claude for Excel</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="partial">~</span></td>
+            <td>$20/мес</td>
+          </tr>
+          <tr>
+            <td>ChatGPT for Excel</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="partial">~</span></td>
+            <td>$20/мес</td>
+          </tr>
+          <tr>
+            <td>Microsoft Copilot</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="partial">~</span></td>
+            <td>$30/мес</td>
+          </tr>
+          <tr>
+            <td>DeepSeek (бесплатно)</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td>Бесплатно</td>
+          </tr>
+          <tr>
+            <td>Shortcut AI</td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="partial">~</span></td>
+            <td>$49/мес</td>
+          </tr>
+          <tr>
+            <td>Julius AI</td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td>$22/мес</td>
+          </tr>
+          <tr>
+            <td>Power Query + ИИ</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td>Бесплатно</td>
+          </tr>
+          <tr>
+            <td>Yandex DataLens</td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td>Бесплатно</td>
+          </tr>
+          <tr>
+            <td>Power BI</td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td>Free / $10/мес</td>
+          </tr>
+          <tr>
+            <td>Datarails</td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td>Энтерпрайз</td>
+          </tr>
+          <tr>
+            <td>Gemini (Google)</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="check">✓</span></td>
+            <td>Бесплатно / Pro</td>
+          </tr>
+          <tr>
+            <td>Grok (xAI)</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="partial">~</span></td>
+            <td><span class="check">✓</span></td>
+            <td><span class="cross">✗</span></td>
+            <td><span class="cross">✗</span></td>
+            <td>Бесплатно</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reco-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 24px;">
+      <div class="highlight-box" style="margin-bottom: 0;">
+        <div class="highlight-box-title">🚀 Нулевой бюджет — максимум результата</div>
+        <p style="font-size: 13px;"><strong style="color:var(--text)">Grok</strong> (формулы/VBA) + <strong style="color:var(--text)">Gemini в Sheets</strong> (анализ данных) + <strong style="color:var(--text)">DeepSeek</strong> (сложный код) + <strong style="color:var(--text)">Yandex DataLens</strong> (визуализация). Всё это — полностью бесплатно.</p>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 0;">
+        <div class="highlight-box-title">💎 Лучшая связка за $20</div>
+        <p style="font-size: 13px;"><strong style="color:var(--text)">Claude Pro ($20)</strong> — даёт Claude for Excel + работу с большими файлами в чате. Покрывает 90% задач: формулы, VBA, анализ данных, финмоделинг, написание отчётов. Дополните бесплатным Grok для задач с актуальными данными.</p>
+      </div>
+      <div class="highlight-box" style="margin-bottom: 0;">
+        <div class="highlight-box-title">🏢 Для корпоратива</div>
+        <p style="font-size: 13px;">Если ИБ-политика запрещает сторонние инструменты: <strong style="color:var(--text)">Microsoft Copilot M365</strong> внутри тенанта + <strong style="color:var(--text)">Power BI</strong> для визуализации. Полностью внутри экосистемы Microsoft.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p class="footer-note">
+      Справочник создан для финансистов, аналитиков и всех, кто ежедневно работает с Excel.<br>
+      <strong>Инструменты обновляются быстро</strong> — проверяйте актуальность цен и функций на официальных сайтах.<br>
+      <span style="opacity: 0.5; font-size: 12px;">Последнее обновление: апрель 2026</span>
+    </p>
+  </div>
+</footer>
+
+</main>
+
+<script>
+// Toggle guide
+function toggleGuide(btn) {
+  btn.classList.toggle('open');
+  const content = btn.nextElementSibling;
+  content.classList.toggle('open');
+
+  // Серая подложка на карточке при раскрытии
+  const card = btn.closest('.tool-card');
+  if (card) {
+    card.classList.toggle('is-open', btn.classList.contains('open'));
+  }
+}
+
+// Copy button
+function copyText(btn) {
+  const text = btn.previousElementSibling.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Скопировано!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Копировать';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// Intersection Observer for sections
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
+
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+// Stagger hero elements
+document.querySelectorAll('.fade-up').forEach((el, i) => {
+  el.style.animationDelay = `${i * 0.1}s`;
+  el.style.opacity = '0';
+  el.style.animation = `fadeUp 0.7s ease-out ${i * 0.1}s forwards`;
+});
+
+// Mobile nav hamburger (появляется на мобильном)
+const mobileNavBtn = document.getElementById('mobile-nav-btn');
+const mobileNavMenu = document.getElementById('mobile-nav-menu');
+if (mobileNavBtn && mobileNavMenu) {
+  mobileNavBtn.addEventListener('click', () => {
+    const open = mobileNavMenu.classList.toggle('open');
+    mobileNavBtn.textContent = open ? '✕' : '☰';
+  });
+  mobileNavMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileNavMenu.classList.remove('open');
+      mobileNavBtn.textContent = '☰';
+    });
+  });
+}
+</script>
+
+</body>
+</html>
